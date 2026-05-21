@@ -40,8 +40,8 @@ app.get("/todos/:todoId", async (req, res) => {
         } else {
             results = await fetchApiData(todoId);
             await redisClient.set(todoId, JSON.stringify(results), {
-                EX: 120,
-                NX: true
+                EX: 120, // Time in seconds to live
+                NX: true // Update cache if key is not there
             });
         }
 
