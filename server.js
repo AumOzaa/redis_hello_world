@@ -15,7 +15,6 @@ app.get("/photos", async (req, res) => {
 
     const token = await redisClient.get("data");
     if (token != null) {
-        console.log("Using redis");
         return res.json({
             "response": token
         });
@@ -25,8 +24,8 @@ app.get("/photos", async (req, res) => {
             { params: { albumId } }
         )
 
-        redisClient.setEx('photos', DEFAULT_EXPIRATION_SECONDS, JSON.stringify(data)); // Can only store the strings in redis
-        await redisClient.set("data", JSON.stringify(data));
+        // redisClient.setEx('photos', JSON.stringify(data),); // Can only store the strings in redis
+        await redisClient.set("data", JSON.stringify(data), { EX: DEFAULT_EXPIRATION_SECONDS });
 
         res.json({
             data
