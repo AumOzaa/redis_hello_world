@@ -13,29 +13,26 @@ app.get("/photos", async (req, res) => {
     const albumId = req.query.albumId;
     console.log("Reached here");
 
-    redisClient.get("photos", (error, photos) => {
-        console.log("Inside the redis get");
+    const token = await redisClient.get("data");
+    if (token != null) {
+        console.log("Using redis");
+        return res.json({
+            "response": token
+        });
+    } else {
+        const { data } = await axios.get(
+            "https://jsonplaceholder.typicode.com/photos",
+            { params: { albumId } }
+        )
 
-        console.log(photos);
-        if (photos != null) {
-            console.log("Returned from cache");
-            return res.json(JSON.parse(photos));
-        } else {
-            console.log("There is nothing like that here");
-        }
-    });
+        redisClient.setEx('photos', DEFAULT_EXPIRATION_SECONDS, JSON.stringify(data)); // Can only store the strings in redis
+        await redisClient.set("data", JSON.stringify(data));
 
-    console.log("Skipping the redis part eh?");
-    const { data } = await axios.get(
-        "https://jsonplaceholder.typicode.com/photos",
-        { params: { albumId } }
-    )
-
-    redisClient.setEx('photos', DEFAULT_EXPIRATION_SECONDS, JSON.stringify(data)); // Can only store the strings in redis
-    res.json(data);
+        res.json({
+            data
+        });
+    }
 });
-
-
 
 app.listen(3000, () => {
     console.log("http://localhost:3000");
