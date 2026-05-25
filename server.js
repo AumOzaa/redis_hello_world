@@ -11,12 +11,16 @@ app.use(express.json());
 
 app.get("/photos", async (req, res) => {
     const albumId = req.query.albumId;
-    console.log("Reached here");
+    console.log(`AlbumId ${albumId}`);
 
-    const token = await redisClient.get("data");
-    if (token != null) {
+    const cacheKey = `AlbumId${albumId}`;
+    console.log(cacheKey);
+
+    var cacheData = await redisClient.get(cacheKey);
+    if (cacheData != null) {
+        cacheData = JSON.parse(cacheData);
         return res.json({
-            "response": token
+            "response": cacheData
         });
     } else {
         const { data } = await axios.get(
@@ -24,8 +28,10 @@ app.get("/photos", async (req, res) => {
             { params: { albumId } }
         )
 
+        console.log(data);
+
         // redisClient.setEx('photos', JSON.stringify(data),); // Can only store the strings in redis
-        await redisClient.set("data", JSON.stringify(data), { EX: DEFAULT_EXPIRATION_SECONDS });
+        await redisClient.set(cacheKey, JSON.stringify(data), { EX: DEFAULT_EXPIRATION_SECONDS });
 
         res.json({
             data
